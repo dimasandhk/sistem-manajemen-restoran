@@ -103,9 +103,29 @@ class Customer : public People {
         }
 };
 
+class Menu {
+    protected:
+        string name;
+        int price;
+    
+    public:
+        Menu(string inpName, int inpPrice) {
+            name = inpName;
+            price = inpPrice;
+        }
+
+        // Getter
+        string getName() {return name;}
+        int getPrice() {return price;}
+
+        // Setter
+        void setName(string inpName) {name = inpName;}
+        void setPrice(int inpPrice) {price = inpPrice;}
+};
+
 class Order : public Customer {
     protected:
-        vector<string> items;
+        vector<Menu> items;
         int totalPrice;
     
     public:
@@ -115,7 +135,6 @@ class Order : public Customer {
         }
 
         // Getter
-        vector<string> getItems() {return items;}
         int getTotalPriceAfterDisc() {
             vector<int> discountList = {0, 8, 16, 20};
             MemberType memberType = getType();
@@ -125,9 +144,9 @@ class Order : public Customer {
         int getTotalPrice() {return totalPrice;}
 
         // Setter
-        void addItem(string item) {
+        void addItem(Menu item) {
             items.push_back(item);
-            totalPrice += 15000;
+            totalPrice += item.getPrice();
         }
 
         // Method
@@ -138,7 +157,7 @@ class Order : public Customer {
         void printReceipt() {
             cout << "Receipt for " << getName() << ":\n";
             for (int i = 0; i < items.size(); i++) {
-                cout << i + 1 << ". " << items[i] << " - Rp 15000\n";
+                cout << i + 1 << ". " << items[i].getName() << " - Rp " << items[i].getPrice() << endl;
             }
 
             cout << "Total price: Rp " << getTotalPrice() << endl;
