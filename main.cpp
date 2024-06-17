@@ -16,6 +16,26 @@ Date current_time() {
     return date;
 }
 
+class inventory {
+    protected:
+        string name;
+        int stock;
+    
+    public:
+        inventory(string inpName, int inpStock) {
+            name = inpName;
+            stock = inpStock;
+        }
+
+        // Getter
+        string getName() {return name;}
+        int getStock() {return stock;}
+
+        // Setter
+        void setName(string inpName) {name = inpName;}
+        void setStock(int inpStock) {stock = inpStock;}
+};
+
 class People {
     protected:
         string name;
@@ -107,20 +127,28 @@ class Menu {
     protected:
         string name;
         int price;
+        string ingredient;
+        int amount;
     
     public:
-        Menu(string inpName, int inpPrice) {
+        Menu(string inpName, int inpPrice, string inpIngredient, int inpAmount) {
             name = inpName;
             price = inpPrice;
+            ingredient = inpIngredient; 
+            amount = inpAmount;
         }
 
         // Getter
         string getName() {return name;}
         int getPrice() {return price;}
+        string getIngredient() {return ingredient;}
+        int getAmount() {return amount;}
 
         // Setter
         void setName(string inpName) {name = inpName;}
         void setPrice(int inpPrice) {price = inpPrice;}
+        void setIngredient(string inpIngredient) {ingredient = inpIngredient;}
+        void setAmount(int inpAmount) {amount = inpAmount;}
 };
 
 class Order : public Customer {
@@ -167,9 +195,52 @@ class Order : public Customer {
 
 vector<Order> OrderList;
 vector<Menu*>  MenuList;
-vector<People*> PeopleList;
 vector<Employee*> EmployeeList;
 vector<Customer*> CustomerList;
+vector<inventory*> InventoryList;
+
+void addinventory() {
+    string name;
+    int stock;
+
+    cout << "Enter inventory's name: ";
+    cin >> name;
+    cout << "Enter inventory's stock: ";
+    cin >> stock;
+
+    InventoryList.push_back(new inventory(name, stock));
+}
+
+bool inventoryenough(string name, int amount) {
+    for(auto &inventory : InventoryList) {
+        if (name == inventory->getName()) {
+            if (inventory->getStock() >= amount) {
+                return true;
+            }
+            else {
+                cout << "Inventory not enough!" << endl;
+                return false;
+            }
+        }
+        else {
+            cout << "Inventory not found!" << endl;
+            return false;
+        }
+    }
+}
+
+void useinventory(string name, int amount) {
+    for(auto &inventory : InventoryList) {
+        if (name == inventory->getName()) {
+            inventory->setStock(inventory->getStock() - amount);
+        }
+        else {
+            cout << "Inventory not found!" << endl;
+        }
+    }
+}
+
+
 
 void addemployee() {
     string name;
@@ -189,6 +260,7 @@ void addemployee() {
 
     EmployeeList.push_back(new Employee(name, birthDate, type, salary));    
 }
+
 
 void ModifyEmployee() {
     string name, newName;
@@ -309,18 +381,27 @@ void showCustomer() {
 void addMenu() {
     string name;
     int price;
+    string ingredient;
+    int amount;    
 
     cout << "Enter menu's name: ";
     cin >> name;
     cout << "Enter menu's price: ";
     cin >> price;
+    cout << "Enter menu's ingredient: ";
+    cin >> ingredient;
+    cout << "Enter ingredients's amount: ";
+    cin >> amount;
 
-    MenuList.push_back(new Menu(name, price));
+
+    MenuList.push_back(new Menu(name, price, ingredient, amount));
 }
 
 void ModifyMenu() {
     string name, newName;
     int price;
+    string newingredient;
+    int newamount;
     
     for(auto &menu : MenuList) {
         cout << "Enter menu's name: ";
@@ -330,9 +411,16 @@ void ModifyMenu() {
             cin >> newName;
             cout << "Enter new menu's price: ";
             cin >> price;
+            cout << "Enter new menu's ingredient: ";
+            cin >> newingredient;
+            cout << "Enter new ingredients's amount: ";
+            cin >> newamount;
 
             menu->setName(newName);
             menu->setPrice(price);
+            menu->setIngredient(newingredient);
+            menu->setAmount(newamount);
+
         }
         else {
             cout << "Menu not found!" << endl;
@@ -356,7 +444,7 @@ void deleteMenu() {
 
 void showMenu() {
     for(auto &menu : MenuList) {
-        cout << menu->getName() << " - Rp " << menu->getPrice() << endl;
+        cout << menu->getName() << " - Rp " << menu->getPrice() << menu->getIngredient() << menu->getAmount()  << endl;
     }
 }
 
@@ -400,176 +488,135 @@ void addOrder() {
         return;
     }
     
+    if (!inventoryenough(MenuList[menuIndex]->getIngredient(), MenuList[menuIndex]->getAmount())) {
+        cout << "Inventory not enough!" << endl;
+        return;
+    }else {
+        useinventory(MenuList[menuIndex]->getIngredient(), MenuList[menuIndex]->getAmount());
+    }
     // Create new order and add menu item
     OrderList.push_back(Order(CustomerList[customerIndex]->getName(), CustomerList[customerIndex]->getBirthDate(), CustomerList[customerIndex]->getType()));
     OrderList.back().addItem(*MenuList[menuIndex]);
-}
 
-void modifyOrder() {
-    string customerName, menuName;
-    int customerIndex = -1, menuIndex = -1;
-    
-    // Get customer name
-    cout << "Enter customer's name: ";
-    cin >> customerName;
-    
-    // Find customer index
-    for (int i = 0; i < OrderList.size(); i++) {
-        if (OrderList[i].getName() == customerName) {
-            customerIndex = i;
-            break;
-        }
-    }
-    
-    // Check if customer exists
-    if (customerIndex == -1) {
-        cout << "Customer not found!" << endl;
-        return;
-    }
-    
-    // Get menu name
-    cout << "Enter menu's name: ";
-    cin >> menuName;
-    
-    // Find menu index
-    for (int i = 0; i < MenuList.size(); i++) {
-        if (MenuList[i]->getName() == menuName) {
-            menuIndex = i;
-            break;
-        }
-    }
-    
-    // Check if menu exists
-    if (menuIndex == -1) {
-        cout << "Menu not found!" << endl;
-        return;
-    }
-    
-    // Add menu item
-    OrderList[customerIndex].addItem(*MenuList[menuIndex]);
-}
 
-void deleteOrder() {
-    string customerName;
-    int customerIndex = -1;
-    
-    // Get customer name
-    cout << "Enter customer's name: ";
-    cin >> customerName;
-    
-    // Find customer index
-    for (int i = 0; i < OrderList.size(); i++) {
-        if (OrderList[i].getName() == customerName) {
-            customerIndex = i;
-            break;
-        }
-    }
-    
-    // Check if customer exists
-    if (customerIndex == -1) {
-        cout << "Customer not found!" << endl;
-        return;
-    }
-    
-    // Delete order
-    OrderList.erase(OrderList.begin() + customerIndex);
-}
-
-void showOrder() {
     for (int i = 0; i < OrderList.size(); i++) {
         cout << i + 1 << ". " << OrderList[i].intro() << endl;
     }
 }
 
 int main() {
-    while(true){
-        int choice;
-        cout << "1.Employee Management\n2.Customer Management\n3.Menu Management\n4.Order Management\n5.Exit" << endl;
-        cout << "Enter your choice: ";
-        cin >> choice;
-        if (choice == 1) {
-            int choice2;
-            cout << "1.Add Employee\n2.Modify Employee\n3.Delete Employee\n4.Show Employee\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addemployee();
-            }
-            else if (choice2 == 2) {
-                ModifyEmployee();
-            }
-            else if (choice2 == 3) {
-                deleteEmployee();
-            }
-            else if (choice2 == 4) {
-                showEmployee();
-            }
-            else if (choice2 == 5) {
-                continue;
+   while(true){
+    cout << "1. Inventory Management" << endl;
+    cout << "2. Employee Management" << endl;
+    cout << "3. Customer Management" << endl;
+    cout << "4. Menu Management" << endl;
+    cout << "5. Order" << endl;
+    cout << "6. Exit" << endl;
+    cout << "Choose: ";
+    int choose;
+    cin >> choose;
+    if (choose == 1) {
+        cout << "1. Add Inventory" << endl;
+        cout << "2. Show Inventory" << endl;
+        cout << "3. Exit" << endl;
+        cout << "Choose: ";
+        int choose;
+        cin >> choose;
+        if (choose == 1) {
+            addinventory();
+        }
+        else if (choose == 2) {
+            for(auto &inventory : InventoryList) {
+                cout << inventory->getName() << " - " << inventory->getStock() << endl;
             }
         }
-        else if (choice == 2) {
-            int choice2;
-            cout << "1.Add Customer\n2.Modify Customer\n3.Delete Customer\n4.Show Customer\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addCostumer();
-            }
-            else if (choice2 == 2) {
-                ModifyCustomer();
-            }
-            else if (choice2 == 3) {
-                deleteCustomer();
-            }
-            else if (choice2 == 4) {
-                showCustomer();
-            }
-            else if (choice2 == 5) {
-                continue;
-            }
-        }
-        else if (choice == 3) {
-            int choice2;
-            cout << "1.Add Menu\n2.Modify Menu\n3.Delete Menu\n4.Show Menu\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addMenu();
-            }
-            else if (choice2 == 2) {
-                ModifyMenu();
-            }
-            else if (choice2 == 3) {
-                deleteMenu();
-            }
-            else if (choice2 == 4) {
-                showMenu();
-            }
-            else if (choice2 == 5) {
-                continue;
-            }
-        }
-        else if (choice == 4) {
-            int choice2;
-            cout << "1.Add Order\n2.Modify Order\n3.Delete Order\n4.Show Order\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addOrder();
-            }
-            else if (choice2 == 2) {
-                modifyOrder();
-            }
-            else if (choice2 == 3) {
-                deleteOrder();
-            }
-            else if (choice2 == 4) {
-                showOrder();
-            }
-            else if (choice2 == 5) {
-                continue;
-            }
+        else if (choose == 3) {
+            break;
         }
     }
+    else if (choose == 2) {
+        cout << "1. Add Employee" << endl;
+        cout << "2. Modify Employee" << endl;
+        cout << "3. Delete Employee" << endl;
+        cout << "4. Show Employee" << endl;
+        cout << "5. Exit" << endl;
+        cout << "Choose: ";
+        int choose;
+        cin >> choose;
+        if (choose == 1) {
+            addemployee();
+        }
+        else if (choose == 2) {
+            ModifyEmployee();
+        }
+        else if (choose == 3) {
+            deleteEmployee();
+        }
+        else if (choose == 4) {
+            showEmployee();
+        }
+        else if (choose == 5) {
+            break;
+        }
+    }
+    else if (choose == 3) {
+        cout << "1. Add Customer" << endl;
+        cout << "2. Modify Customer" << endl;
+        cout << "3. Delete Customer" << endl;
+        cout << "4. Show Customer" << endl;
+        cout << "5. Exit" << endl;
+        cout << "Choose: ";
+        int choose;
+        cin >> choose;
+        if (choose == 1) {
+            addCostumer();
+        }
+        else if (choose == 2) {
+            ModifyCustomer();
+        }
+        else if (choose == 3) {
+            deleteCustomer();
+        }
+        else if (choose == 4) {
+            showCustomer();
+        }
+        else if (choose == 5) {
+            break;
+        }
+    }
+    else if (choose == 4) {
+        cout << "1. Add Menu" << endl;
+        cout << "2. Modify Menu" << endl;
+        cout << "3. Delete Menu" << endl;
+        cout << "4. Show Menu" << endl;
+        cout << "5. Exit" << endl;
+        cout << "Choose: ";
+        int choose;
+        cin >> choose;
+        if (choose == 1) {
+            addMenu();
+        }
+        else if (choose == 2) {
+            ModifyMenu();
+        }
+        else if (choose == 3) {
+            deleteMenu();
+        }
+        else if (choose == 4) {
+            showMenu();
+        }
+        else if (choose == 5) {
+            break;
+        }
+   }
+    else if (choose == 5) {
+            addOrder();
+    }
+    else if (choose == 6) {
+        break;
+    }
+    else {
+        cout << "Invalid input!" << endl;
+    }
+}
 }
