@@ -1,575 +1,729 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 using namespace std;
 
-enum EmployeeType { Chef, Waiter };
-struct Date {int day, month, year;};
-
-Date current_time() {
+// Function to log activities
+void log_activity(const string& activity) {
+    ofstream log_file("activity.log", ios_base::app);
     time_t now = time(0);
-    tm *ltm = localtime(&now);
-
-    Date date;
-    date.day = ltm->tm_mday;
-    date.month = 1 + ltm->tm_mon;
-    date.year = 1900 + ltm->tm_year;
-
-    return date;
+    tm* ltm = localtime(&now);
+    log_file << "[" << 1900 + ltm->tm_year << "-"
+             << setfill('0') << setw(2) << 1 + ltm->tm_mon << "-"
+             << setfill('0') << setw(2) << ltm->tm_mday << " "
+             << setfill('0') << setw(2) << ltm->tm_hour << ":"
+             << setfill('0') << setw(2) << ltm->tm_min << ":"
+             << setfill('0') << setw(2) << ltm->tm_sec << "] "
+             << activity << endl;
+    log_file.close();
 }
 
-class People {
-    protected:
-        string name;
-        Date birthDate;
-    
-    public:
-        People(string inpName, Date inpBirthDate) {
-            name = inpName;
-            birthDate = inpBirthDate;
+// Item object class
+class Item {
+private:
+    int quantity;
+
+public:
+    string name;
+
+    // Constructor
+    Item(string name, int quantity) {
+        this->name = name;
+        this->quantity = quantity;
+    }
+
+    // Add quantity
+    void add(int q) {
+        quantity += q;
+    }
+
+    // Remove quantity
+    void remove(int q) {
+        quantity -= q;
+    }
+
+    // Get quantity
+    int get_quantity() {
+        return quantity;
+    }
+};
+
+// Recipe object class
+class Recipe {
+protected:
+    vector<pair<string, int>> ingredients;
+
+public:
+    string name;
+
+    // Constructor
+    Recipe(string name, vector<pair<string, int>> ingredients) {
+        this->name = name;
+        this->ingredients = ingredients;
+    }
+
+    // Update recipe
+    void update(vector<pair<string, int>> ingredients) {
+        this->ingredients = ingredients;
+    }
+
+    // Get recipe name
+    string get_name() {
+        return name;
+    }
+
+    // Get recipe size
+    int get_recipe_size() {
+        return ingredients.size();
+    }
+
+    // Get recipe
+    vector<pair<string, int>> get_recipe() {
+        return ingredients;
+    }
+
+    // Show recipe
+    virtual void show_recipe() {
+        cout << "\nRECIPE: " << name << endl;
+        for (auto& ingredient : ingredients) {
+            cout << ingredient.first << ": " << ingredient.second << endl;
+        }
+    }
+};
+
+// GroupRecipe object class inheriting from Recipe
+class GroupRecipe : public Recipe {
+private:
+    int servings;
+public:
+    // Constructor
+    GroupRecipe(string name, vector<pair<string, int>> ingredients, int servings)
+        : Recipe(name, ingredients), servings(servings) {}
+
+    // Show recipe
+    void show_recipe() override {
+        cout << "\nGROUP RECIPE: "
+                << name 
+                << " (" << servings << " servings)" <<  endl;
+        for (auto& ingredient : get_recipe()) {
+            cout << ingredient.first << ": " << ingredient.second << endl;
+        }
+    }
+};
+
+// Main inventory tracking class
+class Inventory {
+private:
+    vector<Item> items;
+    vector<Recipe*> recipes;
+
+    int find_item_index(string item) {
+        for (int i = 0; i < items.size(); i++)
+            if (items[i].name == item)
+                return i;
+        return -1;
+    }
+
+    int find_recipe_index(string recipe) {
+        for (int i = 0; i < recipes.size(); i++)
+            if (recipes[i]->name == recipe)
+                return i;
+        return -1;
+    }
+
+public:
+    //=================//
+    // ITEM OPERATIONS //
+    //=================//
+
+    // Add item (single)
+    void add_item(string name, int quantity) {
+        if (find_item_index(name) != -1) {
+            items[find_item_index(name)].add(quantity);
+            log_activity("Added " + to_string(quantity) + " of " + name);
+            return;
         }
 
-        // Getter
-        string getName() {return name;}
-        Date getBirthDate() {return birthDate;}
-        int getAge() {
-            Date now = current_time();
-            int age = now.year - birthDate.year;
-            if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
-                age--;
+        items.push_back(Item(name, quantity));
+        log_activity("Added new item " + name + " with quantity " + to_string(quantity));
+    }
+
+    // Add item (multiple)
+    void add_item(vector<pair<string, int>> input) {
+        for (int i = 0; i < input.size(); i++) {
+            if (find_item_index(input[i].first) != -1)
+                items[find_item_index(input[i].first)].add(input[i].second);
+            else
+                items.push_back(Item(input[i].first, input[i].second));
+        }
+
+        log_activity("Added multiple items to inventory");
+    }
+
+    // Check item
+    bool check_item(string name, int quantity) {
+        if (find_item_index(name) != -1) {
+            if (items[find_item_index(name)].get_quantity() < quantity)
+                return false;
+            return true;
+        }
+        return false;
+    }
+
+    // Remove item (single)
+    void remove_item(string item, int quantity) {
+        if (find_item_index(item) != -1) {
+            if (items[find_item_index(item)].get_quantity() < quantity) {
+                cout << "Not enough quantity" << endl;
+                log_activity("Failed to remove " + to_string(quantity) + " of " + item + ": Not enough quantity");
+                return;
             }
-            return age;
+            if (items[find_item_index(item)].get_quantity() == quantity) {
+                items.erase(items.begin() + find_item_index(item));
+                log_activity("Removed all of " + item);
+                return;
+            }
+            items[find_item_index(item)].remove(quantity);
+            log_activity("Removed " + to_string(quantity) + " of " + item);
+            return;
+        }
+    }
+
+    // Remove item (multiple)
+    void remove_item(vector<pair<string, int>> items) {
+        for (int i = 0; i < items.size(); i++) {
+            if (find_item_index(items[i].first) != -1) {
+                if (this->items[find_item_index(items[i].first)].get_quantity() < items[i].second) {
+                    cout << "Not enough quantity" << endl;
+                    log_activity("Failed to remove multiple items: Not enough quantity");
+                    return;
+                } else if (this->items[find_item_index(items[i].first)].get_quantity() == items[i].second) {
+                    this->items.erase(this->items.begin() + find_item_index(items[i].first));
+                } else {
+                    this->items[find_item_index(items[i].first)].remove(items[i].second);
+                }
+            }
+        }
+        log_activity("Removed multiple items from inventory");
+    }
+
+    // Show item
+    void show_item(string item) {
+        if (find_item_index(item) != -1) {
+            cout << "\nITEM: " << item << endl
+                << "Quantity: " << items[find_item_index(item)].get_quantity() << endl;
+            log_activity("Displayed item " + item);
+            return;
         }
 
-        // Setter
-        void setName(string inpName) {name = inpName;}
-        void setBirthDate(Date inpBirthDate) {birthDate = inpBirthDate;}
+        cout << "Item not found" << endl;
+        log_activity("Failed to display item " + item + ": Item not found");
+    }
 
-        // Method
-        virtual string intro() {
-            return "Hello, my name is " + name + " and I'm " + to_string(getAge()) + " years old.";
+    // Print items
+    void print_items() {
+        cout << "\nINVENTORY:" << endl;
+        for (int i = 0; i < items.size(); i++)
+            cout << items[i].name << ": "
+            << items[i].get_quantity() << endl;
+        cout << endl;
+        log_activity("Displayed all items in inventory");
+    }
+
+    //===================//
+    // RECIPE OPERATIONS //
+    //===================//
+
+    // Create recipe
+    void create_recipe(string name, vector<pair<string, int>> ingredients) {
+        if (find_recipe_index(name) != -1) {
+            cout << "Recipe already exists" << endl;
+            log_activity("Failed to create recipe " + name + ": Recipe already exists");
+            return;
         }
 
-        bool isAdult() {
-            return getAge() >= 18;
-        }
-};
+        recipes.push_back(new Recipe(name, ingredients));
+        log_activity("Created recipe " + name);
+    }
 
-class Employee : public People {
-    protected:
-        EmployeeType type;
-        int salary;
-    
-    public:
-        Employee(string inpName, Date inpBirthDate, EmployeeType inpType, int inpSalary) 
-        : People(inpName, inpBirthDate) {
-            type = inpType;
-            salary = inpSalary;
+    // Create group recipe
+    void create_group_recipe(string name, vector<pair<string, int>> ingredients, int servings) {
+        if (find_recipe_index(name) != -1) {
+            cout << "Recipe already exists" << endl;
+            log_activity("Failed to create group recipe " + name + ": Recipe already exists");
+            return;
         }
 
-        // Getter
-        EmployeeType getType() {return type;}
-        int getSalary() {return salary;}
+        recipes.push_back(new GroupRecipe(name, ingredients, servings));
+        log_activity("Created group recipe " + name);
+    }
 
-        // Setter
-        void setType(EmployeeType inpType) {type = inpType;}
-        void setSalary(int inpSalary) {salary = inpSalary;}
+    // Check recipe
+    bool check_recipe(string name) {
+        if (find_recipe_index(name) != -1) return true;
+        return false;
+    }
 
-        // Method
-        string intro() override {
-            return People::intro() + " I'm an employee with type " + to_string(type) + " and salary " + to_string(salary) + ".";
-        }
-};
-
-enum MemberType { Basic, Gold, Platinum, Diamond };
-
-class Customer : public People {
-    protected:
-        MemberType type;
-    
-    public:
-        Customer(string inpName, Date inpBirthDate, MemberType inpType) 
-        : People(inpName, inpBirthDate) {
-            type = inpType;
+    // Update recipe
+    void update_recipe(string name, vector<pair<string, int>> ingredients) {
+        if (find_recipe_index(name) != -1) {
+            recipes[find_recipe_index(name)]->update(ingredients);
+            log_activity("Updated recipe " + name);
+            return;
         }
 
-        // Getter
-        MemberType getType() {return type;}
+        cout << "Recipe not found" << endl;
+        log_activity("Failed to update recipe " + name + ": Recipe not found");
+    }
 
-        // Setter
-        void setType(MemberType inpType) {type = inpType;}
-
-        // Method
-        string intro() override {
-            return People::intro() + " I'm a customer with type " + to_string(type);
-        }
-};
-
-class Menu {
-    protected:
-        string name;
-        int price;
-    
-    public:
-        Menu(string inpName, int inpPrice) {
-            name = inpName;
-            price = inpPrice;
+    // Remove recipe
+    void remove_recipe(string name) {
+        if (find_recipe_index(name) != -1) {
+            recipes.erase(recipes.begin() + find_recipe_index(name));
+            log_activity("Removed recipe " + name);
+            return;
         }
 
-        // Getter
-        string getName() {return name;}
-        int getPrice() {return price;}
+        cout << "Recipe not found" << endl;
+        log_activity("Failed to remove recipe " + name + ": Recipe not found");
+    }
 
-        // Setter
-        void setName(string inpName) {name = inpName;}
-        void setPrice(int inpPrice) {price = inpPrice;}
-};
-
-class Order : public Customer {
-    protected:
-        vector<Menu> items;
-        int totalPrice;
-    
-    public:
-        Order(string inpName, Date inpBirthDate, MemberType inpType) 
-        : Customer(inpName, inpBirthDate, inpType) {
-            totalPrice = 0;
+    // Show recipe
+    void show_recipe(string name) {
+        if (find_recipe_index(name) != -1) {
+            recipes[find_recipe_index(name)]->show_recipe();
+            log_activity("Displayed recipe " + name);
+            return;
         }
 
-        // Getter
-        int getTotalPriceAfterDisc() {
-            vector<int> discountList = {0, 8, 16, 20};
-            MemberType memberType = getType();
+        cout << "Recipe not found" << endl;
+        log_activity("Failed to display recipe " + name + ": Recipe not found");
+    }
 
-            return totalPrice - totalPrice * (discountList[memberType] / 100);
-        }
-        int getTotalPrice() {return totalPrice;}
-
-        // Setter
-        void addItem(Menu item) {
-            items.push_back(item);
-            totalPrice += item.getPrice();
+    // Print recipes
+    void print_recipes() {
+        cout << "\nRECIPES:" << endl;
+        for (int i = 0; i < recipes.size(); i++){
+            cout << recipes[i]->get_name()
+                 << " (" << recipes[i]->get_recipe_size() << " ingredients)" << endl;
         }
 
-        // Method
-        string intro() override {
-            return Customer::intro() + " with total price " + to_string(totalPrice);
-        }
+        cout << endl;
+        log_activity("Displayed all recipes");
+    }
 
-        void printReceipt() {
-            cout << "Receipt for " << getName() << ":\n";
-            for (int i = 0; i < items.size(); i++) {
-                cout << i + 1 << ". " << items[i].getName() << " - Rp " << items[i].getPrice() << endl;
+    // Use recipe
+    void use_recipe(string name) {
+        if (find_recipe_index(name) != -1) {
+            for (auto& ingredient : recipes[find_recipe_index(name)]->get_recipe()) {
+                if (!check_item(ingredient.first, ingredient.second)) {
+                    cout << "Not enough ingredients" << endl;
+                    log_activity("Failed to use recipe " + name + ": Not enough ingredients");
+                    return;
+                }
             }
 
-            cout << "Total price: Rp " << getTotalPrice() << endl;
-            cout << "Total price after discount: Rp " << getTotalPriceAfterDisc() << endl;
+            for (auto& ingredient : recipes[find_recipe_index(name)]->get_recipe()) {
+                remove_item(ingredient.first, ingredient.second);
+            }
+
+            log_activity("Used recipe " + name);
+            return;
         }
+
+        cout << "Recipe not found" << endl;
+        log_activity("Failed to use recipe " + name + ": Recipe not found");
+    }
+
+    // Export items to CSV
+    void export_items_to_csv(const string& filename) {
+        ofstream csv_file(filename);
+        if (!csv_file.is_open()) {
+            cout << "Failed to open CSV file for writing." << endl;
+            return;
+        }
+
+        csv_file << "Item Name,Quantity" << endl;
+        for (auto& item : items) {
+            csv_file << item.name << "," << item.get_quantity() << endl;
+        }
+
+        csv_file.close();
+        cout << "Items exported to CSV successfully." << endl;
+        log_activity("Exported items to CSV file: " + filename);
+    }
+
+    // Import items from CSV
+    void import_items_from_csv(const string& filename) {
+        ifstream csv_file(filename);
+        if (!csv_file.is_open()) {
+            cout << "Failed to open CSV file for reading." << endl;
+            return;
+        }
+
+        items.clear(); // Clear existing items
+        string line;
+        getline(csv_file, line); // Skip header line
+        while (getline(csv_file, line)) {
+            stringstream ss(line);
+            string item_name;
+            int quantity;
+            if (getline(ss, item_name, ',') && ss >> quantity) {
+                items.push_back(Item(item_name, quantity));
+            }
+        }
+
+        csv_file.close();
+        cout << "Items imported from CSV successfully." << endl;
+        log_activity("Imported items from CSV file: " + filename);
+    }
 };
 
-vector<Order> OrderList;
-vector<Menu*>  MenuList;
-vector<People*> PeopleList;
-vector<Employee*> EmployeeList;
-vector<Customer*> CustomerList;
+//==============//
+// MENU DISPLAY //
+//==============//
 
-void addemployee() {
-    string name;
-    Date birthDate;
-    int salary, typenum;
-    EmployeeType type;
-
-    cout << "Enter employee's name: ";
-    cin >> name;    
-    cout << "Enter employee's birth date (dd mm yyyy): ";
-    cin >> birthDate.day >> birthDate.month >> birthDate.year;
-    cout << "Enter employee's salary: ";
-    cin >> salary;
-    cout << "Enter employee's type (0 for Chef, 1 for Waiter): ";
-    cin >> typenum;
-    type = (EmployeeType)typenum;
-
-    EmployeeList.push_back(new Employee(name, birthDate, type, salary));    
+void display_menu_item() {
+    cout << "\nITEM DASHBOARD"
+        << "\n1. Add Item"
+        << "\n2. Multi-Add Item"
+        << "\n3. Remove Item"
+        << "\n4. Multi-Remove Item"
+        << "\n5. Find Item"
+        << "\n6. Print Items"
+        << "\n7. Export Items to CSV"
+        << "\n8. Import Items from CSV"
+        << "\n0. Exit" << endl;
 }
 
-void ModifyEmployee() {
-    string name, newName;
-    Date birthDate;
-    int salary, typenum;
-    EmployeeType type;
-    
-    for(auto &employee : EmployeeList) {
-        cout << "Enter employee's name: ";
+void display_menu_recipe() {
+    cout << "\nRECIPE DASHBOARD"
+        << "\n1. Create Recipe"
+        << "\n2. Create Group Recipe"
+        << "\n3. Update Recipe"
+        << "\n4. Remove Recipe"
+        << "\n5. Find Recipe"
+        << "\n6. Print Recipes"
+        << "\n7. Use Recipe"
+        << "\n0. Exit" << endl;
+}
+
+void display_menu() {
+    cout << "\nCAFE MANAGEMENT SYSTEM"
+        << "\n1. Item Dashboard"
+        << "\n2. Recipe Dashboard"
+        << "\n0. Exit" << endl;
+}
+
+//===========================//
+// USER INTERFACE OPERATIONS //
+//===========================//
+
+// Loops for item operations
+void loop_item(Inventory& tracker) {
+    int choice;
+    string item;
+    int quantity;
+    vector<pair<string, int>> items;
+
+    display_menu_item();
+
+    cout << "> ";
+    cin >> choice;
+    cout << endl;
+
+    switch (choice) {
+    case 1: {
+        // Add item
+        cout << "[!] Enter item name & quanity" << endl
+                << "  Syntax: <item> <quantity>" << endl
+                << "> ";
+        cin >> item >> quantity;
+        tracker.add_item(item, quantity);
+        break;
+    }
+    case 2:
+        // Multi-Add item
+        cout << "[!] Enter item name & quanity" << endl
+                << "  Syntax: <item> <quantity>" << endl
+                << "  Enter 'exit' to stop" << endl
+                << "Example: " << endl
+                << "  sugar 50" << endl
+                << "  exit" << endl;
+
+        // Creates vector for items
+        while(1) {
+            // Loops until user enters 'exit'
+            cout << "> ";
+            cin >> item;
+            if (item == "exit") break;
+            cin >> quantity;
+
+            // Pushes item to vector
+            items.push_back(make_pair(item, quantity));
+        }
+        tracker.add_item(items);
+        break;
+
+    case 3:
+        // Remove item
+        cout << "[!] Enter item name & quanity" << endl
+                << "  Syntax: <item> <quantity>" << endl
+                << "> ";
+        cin >> item >> quantity;
+        tracker.remove_item(item, quantity);
+        break;
+
+    case 4:
+        // Multi-Remove item
+        cout << "[!] Enter item name & quanity" << endl
+                << "  Syntax: <item> <quantity>" << endl
+                << "  Enter 'exit' to stop" << endl
+                << "Example: " << endl
+                << "  sugar 50" << endl
+                << "  exit" << endl;
+
+        // Creates vector for items
+        while(1) {
+            // Loops until user enters 'exit'
+            cout << "> ";
+            cin >> item;
+            if (item == "exit") break;
+            cin >> quantity;
+
+            // Pushes item to vector
+            items.push_back(make_pair(item, quantity));
+        }
+        tracker.remove_item(items);
+        break;
+
+    case 5:
+        // Find item
+        cout << "[!] Enter item name" << endl
+                << "> ";
+        cin >> item;
+        tracker.show_item(item);
+        break;
+
+    case 6:
+        // Print items
+        tracker.print_items();
+        break;
+
+    case 7:
+        // Export items to CSV
+        cout << "[!] Enter CSV filename" << endl
+             << "> ";
+        cin >> item;
+        tracker.export_items_to_csv(item);
+        break;
+
+    case 8:
+        // Import items from CSV
+        cout << "[!] Enter CSV filename" << endl
+             << "> ";
+        cin >> item;
+        tracker.import_items_from_csv(item);
+        break;
+
+    case 0:
+        cout << "Exiting..." << endl;
+        return;
+
+    default:
+        cout << "Invalid choice. Please try again." << endl;
+    }
+    loop_item(tracker);
+}
+
+// Loops for recipe operations
+void loop_recipe(Inventory& tracker) {
+    int choice;
+    string name, item;
+    int quantity, servings;
+    vector<pair<string, int>> ingredients;
+
+    display_menu_recipe();
+
+    cout << "> ";
+    cin >> choice;
+    cout << endl;
+
+    switch (choice) {
+    case 1:
+        // Get recipe name
+        cout << "[!] Enter recipe name" << endl
+                << "> ";
         cin >> name;
-        if (name == employee->getName()) {
-            cout << "Enter new employee's name: ";
-            cin >> newName;
-            cout << "Enter new employee's birth date (dd mm yyyy): ";
-            cin >> birthDate.day >> birthDate.month >> birthDate.year;
-            cout << "Enter new employee's salary: ";
-            cin >> salary;
-            cout << "Enter new employee's type (0 for Chef, 1 for Waiter): ";
-            cin >> typenum;
-            type = (EmployeeType)typenum;
 
-            employee->setName(newName);
-            employee->setBirthDate(birthDate);
-            employee->setSalary(salary);
-            employee->setType(type);
-        }
-        else {
-            cout << "Employee not found!" << endl;
-        }
-    }
-}
+        // Instructions
+        cout << "[!] Enter ingredient & quantity" << endl
+                << "  Syntax: <item> <quantity>" << endl
+                << "  Enter 'exit' to stop" << endl
+                << "Example: " << endl
+                << "  sugar 50" << endl
+                << "  exit" << endl;
 
-void deleteEmployee() {
-    string name;
-    for(auto &employee : EmployeeList) {
-        cout << "Enter employee's name: ";
+        // Creates vector for ingredients
+        while(1) {
+            // Loops until user enters 'exit'
+            cout << "> ";
+            cin >> item;
+            if (item == "exit") break;
+            cin >> quantity;
+
+            // Pushes item to vector
+            ingredients.push_back(make_pair(item, quantity));
+        }
+        tracker.create_recipe(name, ingredients);
+        break;
+
+    case 2:
+        // Get recipe name
+        cout << "[!] Enter group recipe name" << endl
+                << "> ";
         cin >> name;
-        if (name == employee->getName()) {
-            EmployeeList.erase(remove(EmployeeList.begin(), EmployeeList.end(), employee), EmployeeList.end());
+
+        // Get servings
+        cout << "[!] Enter servings" << endl
+                << "> ";
+        cin >> servings;
+
+        // Instructions
+        cout << "[!] Enter ingredient & quantity" << endl
+                << "  Syntax: <item> <quantity>" << endl
+                << "  Enter 'exit' to stop" << endl
+                << "Example: " << endl
+                << "  sugar 50" << endl
+                << "  exit" << endl;
+
+        // Creates vector for ingredients
+        while(1) {
+            // Loops until user enters 'exit'
+            cout << "> ";
+            cin >> item;
+            if (item == "exit") break;
+            cin >> quantity;
+
+            // Pushes item to vector
+            ingredients.push_back(make_pair(item, quantity));
         }
-        else {
-            cout << "Employee not found!" << endl;
-        }
-    }
-}
+        tracker.create_group_recipe(name, ingredients, servings);
+        break;
 
-void showEmployee() {
-    for(auto &employee : EmployeeList) {
-        cout << employee->intro() << endl;
-    }
-}
-
-void addCostumer() {
-    string name;
-    Date birthDate;
-    int typenum;
-    MemberType type;
-
-    cout << "Enter customer's name: ";
-    cin >> name;    
-    cout << "Enter customer's birth date (dd mm yyyy): ";
-    cin >> birthDate.day >> birthDate.month >> birthDate.year;
-    cout << "Enter customer's type (0 for Basic, 1 for Gold, 2 for Platinum, 3 for Diamond): ";
-    cin >> typenum;
-    type = (MemberType)typenum;
-
-    CustomerList.push_back(new Customer(name, birthDate, type));    
-}
-
-void ModifyCustomer() {
-    string name, newName;
-    Date birthDate;
-    int typenum;
-    MemberType type;
-    
-    for(auto &customer : CustomerList) {
-        cout << "Enter customer's name: ";
+    case 3:
+        // Get recipe name
+        cout << "[!] Enter recipe name" << endl
+                << "> ";
         cin >> name;
-        if (name == customer->getName()) {
-            cout << "Enter new customer's name: ";
-            cin >> newName;
-            cout << "Enter new customer's birth date (dd mm yyyy): ";
-            cin >> birthDate.day >> birthDate.month >> birthDate.year;
-            cout << "Enter new customer's type (0 for Basic, 1 for Gold, 2 for Platinum, 3 for Diamond): ";
-            cin >> typenum;
-            type = (MemberType)typenum;
 
-            customer->setName(newName);
-            customer->setBirthDate(birthDate);
-            customer->setType(type);
-        }
-        else {
-            cout << "Customer not found!" << endl;
-        }
-    }
-}
-
-void deleteCustomer() {
-    string name;
-    for(auto &customer : CustomerList) {
-        cout << "Enter customer's name: ";
-        cin >> name;
-        if (name == customer->getName()) {
-            CustomerList.erase(remove(CustomerList.begin(), CustomerList.end(), customer), CustomerList.end());
-        }
-        else {
-            cout << "Customer not found!" << endl;
-        }
-    }
-}
-
-void showCustomer() {
-    for(auto &customer : CustomerList) {
-        cout << customer->intro() << endl;
-    }
-}
-
-void addMenu() {
-    string name;
-    int price;
-
-    cout << "Enter menu's name: ";
-    cin >> name;
-    cout << "Enter menu's price: ";
-    cin >> price;
-
-    MenuList.push_back(new Menu(name, price));
-}
-
-void ModifyMenu() {
-    string name, newName;
-    int price;
-    
-    for(auto &menu : MenuList) {
-        cout << "Enter menu's name: ";
-        cin >> name;
-        if (name == menu->getName()) {
-            cout << "Enter new menu's name: ";
-            cin >> newName;
-            cout << "Enter new menu's price: ";
-            cin >> price;
-
-            menu->setName(newName);
-            menu->setPrice(price);
-        }
-        else {
-            cout << "Menu not found!" << endl;
-        }
-    }
-}
-
-void deleteMenu() {
-    string name;
-    for(auto &menu : MenuList) {
-        cout << "Enter menu's name: ";
-        cin >> name;
-        if (name == menu->getName()) {
-            MenuList.erase(remove(MenuList.begin(), MenuList.end(), menu), MenuList.end());
-        }
-        else {
-            cout << "Menu not found!" << endl;
-        }
-    }
-}
-
-void showMenu() {
-    for(auto &menu : MenuList) {
-        cout << menu->getName() << " - Rp " << menu->getPrice() << endl;
-    }
-}
-
-void addOrder() {
-    string customerName, menuName;
-    int customerIndex = -1, menuIndex = -1;
-    
-    // Get customer name
-    cout << "Enter customer's name: ";
-    cin >> customerName;
-    
-    // Find customer index
-    for (int i = 0; i < CustomerList.size(); i++) {
-        if (CustomerList[i]->getName() == customerName) {
-            customerIndex = i;
+        // Check if recipe exists
+        if (!tracker.check_recipe(name)) {
+            cout << "Recipe not found" << endl;
             break;
         }
-    }
-    
-    // Check if customer exists
-    if (customerIndex == -1) {
-        cout << "Customer not found!" << endl;
-        return;
-    }
-    
-    // Get menu name
-    cout << "Enter menu's name: ";
-    cin >> menuName;
-    
-    // Find menu index
-    for (int i = 0; i < MenuList.size(); i++) {
-        if (MenuList[i]->getName() == menuName) {
-            menuIndex = i;
-            break;
+
+        // Instructions
+        cout << "[!] Enter ingredient & quantity" << endl
+                << "  Syntax: <item> <quantity>" << endl
+                << "  Enter 'exit' to stop" << endl
+                << "Example: " << endl
+                << "  sugar 50" << endl
+                << "  exit" << endl;
+        
+        // Creates vector for ingredients
+        while(1) {
+            // Loops until user enters 'exit'
+            cout << "> ";
+            cin >> item;
+            if (item == "exit") break;
+            cin >> quantity;
+
+            // Pushes item to vector
+            ingredients.push_back(make_pair(item, quantity));
         }
-    }
-    
-    // Check if menu exists
-    if (menuIndex == -1) {
-        cout << "Menu not found!" << endl;
+        tracker.update_recipe(name, ingredients);
+
+    case 4:
+        // Remove recipe
+        cout << "[!] Enter recipe name" << endl
+                << "> ";
+        cin >> name;
+        tracker.remove_recipe(name);
+        break;
+
+    case 5:
+        // Show recipe
+        cout << "[!] Enter recipe name" << endl
+                << "> ";
+        cin >> name;
+        tracker.show_recipe(name);
+        break;
+
+    case 6:
+        // Print recipes
+        tracker.print_recipes();
+        break;
+
+    case 7:
+        // Use recipe
+        cout << "[!] Enter recipe name" << endl
+                << "> ";
+        cin >> name;
+        tracker.use_recipe(name);
+        break;
+
+    case 0:
+        cout << "Exiting..." << endl;
         return;
+
+    default:
+        cout << "Invalid choice. Please try again." << endl;
+        break;
     }
-    
-    // Create new order and add menu item
-    OrderList.push_back(Order(CustomerList[customerIndex]->getName(), CustomerList[customerIndex]->getBirthDate(), CustomerList[customerIndex]->getType()));
-    OrderList.back().addItem(*MenuList[menuIndex]);
+
+    loop_recipe(tracker);
 }
 
-void modifyOrder() {
-    string customerName, menuName;
-    int customerIndex = -1, menuIndex = -1;
-    
-    // Get customer name
-    cout << "Enter customer's name: ";
-    cin >> customerName;
-    
-    // Find customer index
-    for (int i = 0; i < OrderList.size(); i++) {
-        if (OrderList[i].getName() == customerName) {
-            customerIndex = i;
-            break;
-        }
-    }
-    
-    // Check if customer exists
-    if (customerIndex == -1) {
-        cout << "Customer not found!" << endl;
+// Main loop
+void loop_main(Inventory& tracker) {
+    int choice;
+
+    display_menu();
+
+    cout << "> ";
+    cin >> choice;
+    cout << endl;
+
+    switch (choice) {
+    case 1:
+        loop_item(tracker);
+        break;
+
+    case 2:
+        loop_recipe(tracker);
+        break;
+
+    case 0:
+        cout << "Exiting..." << endl;
         return;
+
+    default:
+        cout << "Invalid choice. Please try again." << endl;
+        break;
     }
-    
-    // Get menu name
-    cout << "Enter menu's name: ";
-    cin >> menuName;
-    
-    // Find menu index
-    for (int i = 0; i < MenuList.size(); i++) {
-        if (MenuList[i]->getName() == menuName) {
-            menuIndex = i;
-            break;
-        }
-    }
-    
-    // Check if menu exists
-    if (menuIndex == -1) {
-        cout << "Menu not found!" << endl;
-        return;
-    }
-    
-    // Add menu item
-    OrderList[customerIndex].addItem(*MenuList[menuIndex]);
+
+    loop_main(tracker);
 }
 
-void deleteOrder() {
-    string customerName;
-    int customerIndex = -1;
-    
-    // Get customer name
-    cout << "Enter customer's name: ";
-    cin >> customerName;
-    
-    // Find customer index
-    for (int i = 0; i < OrderList.size(); i++) {
-        if (OrderList[i].getName() == customerName) {
-            customerIndex = i;
-            break;
-        }
-    }
-    
-    // Check if customer exists
-    if (customerIndex == -1) {
-        cout << "Customer not found!" << endl;
-        return;
-    }
-    
-    // Delete order
-    OrderList.erase(OrderList.begin() + customerIndex);
-}
-
-void showOrder() {
-    for (int i = 0; i < OrderList.size(); i++) {
-        cout << i + 1 << ". " << OrderList[i].intro() << endl;
-    }
-}
-
+// Main function
 int main() {
-    while(true){
-        int choice;
-        cout << "1.Employee Management\n2.Customer Management\n3.Menu Management\n4.Order Management\n5.Exit" << endl;
-        cout << "Enter your choice: ";
-        cin >> choice;
-        if (choice == 1) {
-            int choice2;
-            cout << "1.Add Employee\n2.Modify Employee\n3.Delete Employee\n4.Show Employee\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addemployee();
-            }
-            else if (choice2 == 2) {
-                ModifyEmployee();
-            }
-            else if (choice2 == 3) {
-                deleteEmployee();
-            }
-            else if (choice2 == 4) {
-                showEmployee();
-            }
-            else if (choice2 == 5) {
-                continue;
-            }
-        }
-        else if (choice == 2) {
-            int choice2;
-            cout << "1.Add Customer\n2.Modify Customer\n3.Delete Customer\n4.Show Customer\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addCostumer();
-            }
-            else if (choice2 == 2) {
-                ModifyCustomer();
-            }
-            else if (choice2 == 3) {
-                deleteCustomer();
-            }
-            else if (choice2 == 4) {
-                showCustomer();
-            }
-            else if (choice2 == 5) {
-                continue;
-            }
-        }
-        else if (choice == 3) {
-            int choice2;
-            cout << "1.Add Menu\n2.Modify Menu\n3.Delete Menu\n4.Show Menu\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addMenu();
-            }
-            else if (choice2 == 2) {
-                ModifyMenu();
-            }
-            else if (choice2 == 3) {
-                deleteMenu();
-            }
-            else if (choice2 == 4) {
-                showMenu();
-            }
-            else if (choice2 == 5) {
-                continue;
-            }
-        }
-        else if (choice == 4) {
-            int choice2;
-            cout << "1.Add Order\n2.Modify Order\n3.Delete Order\n4.Show Order\n5.Back" << endl;
-            cout << "Enter your choice: ";
-            cin >> choice2;
-            if (choice2 == 1) {
-                addOrder();
-            }
-            else if (choice2 == 2) {
-                modifyOrder();
-            }
-            else if (choice2 == 3) {
-                deleteOrder();
-            }
-            else if (choice2 == 4) {
-                showOrder();
-            }
-            else if (choice2 == 5) {
-                continue;
-            }
-        }
-    }
+
+    Inventory tracker;
+    loop_main(tracker);
+
+    return 0;
 }
