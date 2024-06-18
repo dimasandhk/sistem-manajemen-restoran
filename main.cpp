@@ -308,7 +308,7 @@ void initializeMenuAndInventory() {
 }
 
 // !INVENTORY
-void addInventory() {
+void addInventory() { // Function to add inventory
     string name;
     int stock;
 
@@ -360,7 +360,7 @@ void useInventory(Menu* menu) {
 }
 
 // !EMPLOYEE
-void addEmployee() {
+void addEmployee() { // Function to add an employee
     string name;
     Date birthDate;
     int salary, typenum;
@@ -443,7 +443,7 @@ void showEmployee() {
 }
 
 // !CUSTOMER
-void addCustomer() {
+void addCustomer() { // Function to add a customer
     string name;
     Date birthDate;
     int typenum;
@@ -521,7 +521,7 @@ void showCustomer() {
 }
 
 // !MENU
-void addMenu() {
+void addMenu() { // Function to add a menu
     string name;
     int price;
     vector<string> ingredients;
@@ -821,7 +821,7 @@ void showOrderHistory() {
 }
 
 int main() {
-    initializeMenuAndInventory();
+    initializeMenuAndInventory(); // Init the menus and inventories
 
     cout << "-----------------------------------------------------------" << endl;
     cout << "---------------- Sistem Manajemen Restoran ----------------" << endl;
@@ -843,6 +843,7 @@ int main() {
         cin >> choose;
         cout << "-----------------------------------------------------------" << endl;
 
+        // Menu number 1 is for Inventory Management
         if (choose == 1) {
             while (true) {
                 cout << "1. Add Inventory" << endl;
@@ -870,7 +871,7 @@ int main() {
                     cout << "Invalid input!" << endl;
                 }
             }
-        } else if (choose == 2) {
+        } else if (choose == 2) { // Menu number 2 is for Employee Management
             while (true) {
                 cout << "1. Add Employee" << endl;
                 cout << "2. Modify Employee" << endl;
@@ -896,7 +897,7 @@ int main() {
                     cout << "Invalid input!" << endl;
                 }
             }
-        } else if (choose == 3) {
+        } else if (choose == 3) { // Menu number 3 is for Customer Management
             while (true) {
                 cout << "1. Add Customer" << endl;
                 cout << "2. Modify Customer" << endl;
@@ -922,7 +923,7 @@ int main() {
                     cout << "Invalid input!" << endl;
                 }
             }
-        } else if (choose == 4) {
+        } else if (choose == 4) { // Menu 
             while (true) {
                 cout << "1. Add Menu" << endl;
                 cout << "2. Modify Menu" << endl;
