@@ -1,13 +1,18 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+// Enumeration for Employee Types
 enum EmployeeType { Chef, Waiter };
+
+// Enumeration for Member Types
 enum MemberType { Basic, Gold, Platinum, Diamond };
 
+// Structure to store Date
 struct Date {
     int day, month, year;
 };
 
+// Function to get the current date
 Date current_time() {
     time_t now = time(0);
     tm *ltm = localtime(&now);
@@ -20,24 +25,28 @@ Date current_time() {
     return date;
 }
 
+// Function to format the price
 string formatPrice(int price) {
     stringstream ss;
     ss << "Rp " << price;
     return ss.str();
 }
 
+// Base class People
 class People {
 protected:
+    // Attributes
     string name;
     Date birthDate;
 
 public:
+    // Constructor
     People(string inpName, Date inpBirthDate) {
         name = inpName;
         birthDate = inpBirthDate;
     }
 
-    // Getter
+    // Getter methods
     string getName() const { return name; }
     Date getBirthDate() const { return birthDate; }
     int getAge() const {
@@ -49,7 +58,7 @@ public:
         return age;
     }
 
-    // Setter
+    // Setter methods
     void setName(string inpName) { name = inpName; }
     void setBirthDate(Date inpBirthDate) { birthDate = inpBirthDate; }
 
@@ -58,24 +67,28 @@ public:
         return "Name: " + name + ", Age: " + to_string(getAge()) + " years old";
     }
 
+    // Method to check if the person is an adult
     bool isAdult() const {
         return getAge() >= 18;
     }
 };
 
+// Derived class Employee inheriting from People
 class Employee : public People {
 protected:
+    // Attributes
     EmployeeType type;
     int salary;
 
 public:
+    // Constructor
     Employee(string inpName, Date inpBirthDate, EmployeeType inpType, int inpSalary)
         : People(inpName, inpBirthDate) {
         type = inpType;
         salary = inpSalary;
     }
 
-    // Getter
+    // Getter methods
     EmployeeType getType() const { return type; }
     int getSalary() const { return salary; }
     string getStringType() const {
@@ -86,7 +99,7 @@ public:
         }
     }
 
-    // Setter
+    // Setter methods
     void setType(EmployeeType inpType) { type = inpType; }
     void setSalary(int inpSalary) { salary = inpSalary; }
 
@@ -96,17 +109,20 @@ public:
     }
 };
 
+// Derived class Customer inheriting from People
 class Customer : public People {
 protected:
+    // Attributes
     MemberType type;
 
 public:
+    // Constructor
     Customer(string inpName, Date inpBirthDate, MemberType inpType)
         : People(inpName, inpBirthDate) {
         type = inpType;
     }
 
-    // Getter
+    // Getter methods
     MemberType getType() const { return type; }
     string getStringType() const {
         if (type == Basic) {
@@ -120,7 +136,7 @@ public:
         }
     }
 
-    // Setter
+    // Setter methods
     void setType(MemberType inpType) { type = inpType; }
 
     // Method
@@ -129,8 +145,10 @@ public:
     }
 };
 
+// Class for Menu
 class Menu {
 protected:
+    // Attributes
     string name;
     int price;
     vector<string> ingredients;
@@ -138,6 +156,7 @@ protected:
     bool halal;
 
 public:
+    // Constructor
     Menu(string inpName, int inpPrice, vector<string> inpIngredients, vector<int> inpAmounts) {
         name = inpName;
         price = inpPrice;
@@ -152,48 +171,58 @@ public:
         }
     }
 
+    // Getter methods
     string getName() const { return name; }
     int getPrice() const { return price; }
     vector<string> getIngredients() const { return ingredients; }
     vector<int> getAmounts() const { return amounts; }
     bool isHalal() const { return halal; }
 
+    // Setter methods
     void setName(string inpName) { name = inpName; }
     void setPrice(int inpPrice) { price = inpPrice; }
     void setIngredients(vector<string> inpIngredients) { ingredients = inpIngredients; }
     void setAmounts(vector<int> inpAmounts) { amounts = inpAmounts; }
 };
 
+// Class for Inventory
 class Inventory {
 protected:
+    // Attributes
     string name;
     int stock;
 
 public:
+    // Constructor
     Inventory(string inpName, int inpStock) {
         name = inpName;
         stock = inpStock;
     }
 
+    // Getter methods
     string getName() const { return name; }
     int getStock() const { return stock; }
 
+    // Setter methods
     void setName(string inpName) { name = inpName; }
     void setStock(int inpStock) { stock = inpStock; }
 };
 
+// Derived class Order inheriting from Customer
 class Order : public Customer {
 protected:
+    // Attributes
     vector<Menu> items;
     int totalPrice;
 
 public:
+    // Constructor
     Order(string inpName, Date inpBirthDate, MemberType inpType)
         : Customer(inpName, inpBirthDate, inpType) {
         totalPrice = 0;
     }
 
-    // Getter
+    // Getter methods
     double getTotalPriceAfterDisc() const {
         vector<double> discountList = {0.0, 8.0, 16.0, 20.0};
         MemberType memberType = getType();
@@ -202,7 +231,7 @@ public:
     }
     int getTotalPrice() const { return totalPrice; }
 
-    // Setter
+    // Setter methods
     void addItem(Menu item) {
         items.push_back(item);
         totalPrice += item.getPrice();
@@ -213,6 +242,7 @@ public:
         return Customer::intro() + " with total price " + formatPrice(getTotalPriceAfterDisc());
     }
 
+    // Method to print the receipt
     void printReceipt() const {
         cout << "Receipt for " << getName() << ":\n";
         for (int i = 0; i < items.size(); i++) {
@@ -224,6 +254,7 @@ public:
     }
 };
 
+// Global vectors to store lists of different objects
 vector<Menu*> MenuList;
 vector<Employee*> EmployeeList;
 vector<Customer*> CustomerList;
@@ -290,6 +321,7 @@ void addInventory() {
     InventoryList.push_back(new Inventory(name, stock));
 }
 
+// Function to check if inventory is enough for a menu
 bool inventoryEnough(Menu* menu) {
     for (int i = 0; i < menu->getIngredients().size(); i++) {
         string ingredient = menu->getIngredients()[i];
@@ -312,6 +344,7 @@ bool inventoryEnough(Menu* menu) {
     return true;
 }
 
+// Function to use inventory when a menu is ordered
 void useInventory(Menu* menu) {
     for (int i = 0; i < menu->getIngredients().size(); i++) {
         string ingredient = menu->getIngredients()[i];
@@ -347,6 +380,7 @@ void addEmployee() {
     EmployeeList.push_back(new Employee(name, birthDate, type, salary));
 }
 
+// Function to modify an employee's details
 void modifyEmployee() {
     string name, newName;
     Date birthDate;
@@ -379,6 +413,7 @@ void modifyEmployee() {
     cout << "Employee not found!" << endl;
 }
 
+// Function to delete an employee
 void deleteEmployee() {
     string name;
     cin.ignore();
@@ -395,9 +430,15 @@ void deleteEmployee() {
     cout << "Employee not found!" << endl;
 }
 
+// Function to show all employees
 void showEmployee() {
-    for (auto &employee : EmployeeList) {
-        cout << employee->intro() << endl;
+    if (EmployeeList.empty()) {
+        cout << "There are no employees." << endl;
+        cout << "-----------------------------------------------------------" << endl;
+    } else {
+        for (auto &employee : EmployeeList) {
+            cout << employee->intro() << endl;
+        }
     }
 }
 
@@ -420,6 +461,7 @@ void addCustomer() {
     CustomerList.push_back(new Customer(name, birthDate, type));
 }
 
+// Function to modify a customer's details
 void modifyCustomer() {
     string name, newName;
     Date birthDate;
@@ -449,6 +491,7 @@ void modifyCustomer() {
     cout << "Customer not found!" << endl;
 }
 
+// Function to delete a customer
 void deleteCustomer() {
     string name;
     cin.ignore();
@@ -465,9 +508,15 @@ void deleteCustomer() {
     cout << "Customer not found!" << endl;
 }
 
+// Function to show all customers
 void showCustomer() {
-    for (auto &customer : CustomerList) {
-        cout << customer->intro() << endl;
+    if (CustomerList.empty()) {
+        cout << "There are no customers." << endl;
+        cout << "-----------------------------------------------------------" << endl;
+    } else {
+        for (auto &customer : CustomerList) {
+            cout << customer->intro() << endl;
+        }
     }
 }
 
@@ -506,6 +555,7 @@ void addMenu() {
     MenuList.push_back(new Menu(name, price, ingredients, amounts));
 }
 
+// Function to modify a menu
 void modifyMenu() {
     string name;
     cout << "Enter menu's name to modify: ";
@@ -553,6 +603,7 @@ void modifyMenu() {
     cout << "Menu not found!" << endl;
 }
 
+// Function to delete a menu
 void deleteMenu() {
     string name;
     cout << "Enter menu's name to delete: ";
@@ -569,26 +620,46 @@ void deleteMenu() {
     cout << "Menu not found!" << endl;
 }
 
+// Function to show all menus
 void showMenu() {
-    for (auto &menu : MenuList) {
-        cout << "# " << menu->getName() << " - " << formatPrice(menu->getPrice()) << (menu->isHalal() ? " (Halal)" : " (Non-Halal)") << endl;
+    if (MenuList.empty()) {
+        cout << "There are no menus." << endl;
+    } else {
+        for (auto &menu : MenuList) {
+            cout << "# " << menu->getName() << " - " << formatPrice(menu->getPrice()) << (menu->isHalal() ? " (Halal)" : " (Non-Halal)") << endl;
+        }
+        cout << "-----------------------------------------------------------" << endl;
     }
 }
 
+// Function to show only halal menus
 void showHalalMenu() {
+    bool found = false;
     for (auto &menu : MenuList) {
         if (menu->isHalal()) {
             cout << "# " << menu->getName() << " - " << formatPrice(menu->getPrice()) << endl;
+            found = true;
         }
     }
+    if (!found) {
+        cout << "There are no halal menus." << endl;
+    }
+    cout << "-----------------------------------------------------------" << endl;
 }
 
+// Function to show only non-halal menus
 void showNonHalalMenu() {
+    bool found = false;
     for (auto &menu : MenuList) {
         if (!menu->isHalal()) {
             cout << "# " << menu->getName() << " - " << formatPrice(menu->getPrice()) << endl;
+            found = true;
         }
     }
+    if (!found) {
+        cout << "There are no non-halal menus." << endl;
+    }
+    cout << "-----------------------------------------------------------" << endl;
 }
 
 // Cashier function to calculate change and return money sheets
@@ -654,6 +725,7 @@ void addOrder() {
 
     if (!hasChef || !hasWaiter) {
         cout << "The order can't be done, there is no chef or waiter!" << endl;
+        cout << "-----------------------------------------------------------" << endl;
         return;
     }
 
@@ -736,15 +808,16 @@ void addOrder() {
     }
 }
 
+// Function to show order history
 void showOrderHistory() {
     if (OrderList.empty()) {
         cout << "No orders have been made yet." << endl;
-        return;
+    } else {
+        for (const auto &order : OrderList) {
+            cout << order.intro() << endl;
+        }
     }
-
-    for (const auto &order : OrderList) {
-        cout << order.intro() << endl;
-    }
+    cout << "-----------------------------------------------------------" << endl;
 }
 
 int main() {
@@ -771,95 +844,135 @@ int main() {
         cout << "-----------------------------------------------------------" << endl;
 
         if (choose == 1) {
-            cout << "1. Add Inventory" << endl;
-            cout << "2. Show Inventory" << endl;
-            cout << "-----------------------------------------------------------" << endl;
-            cout << "Choose: ";
-            cin >> choose;
-            cout << "-----------------------------------------------------------" << endl;
+            while (true) {
+                cout << "1. Add Inventory" << endl;
+                cout << "2. Show Inventory" << endl;
+                cout << "3. Back" << endl;
+                cout << "-----------------------------------------------------------" << endl;
+                cout << "Choose: ";
+                cin >> choose;
+                cout << "-----------------------------------------------------------" << endl;
 
-            if (choose == 1) {
-                addInventory();
-            } else if (choose == 2) {
-                for (auto &inventory : InventoryList) {
-                    cout << inventory->getName() << " - " << inventory->getStock() << endl;
+                if (choose == 1) {
+                    addInventory();
+                } else if (choose == 2) {
+                    if (InventoryList.empty()) {
+                        cout << "There is no inventory." << endl;
+                    } else {
+                        for (auto &inventory : InventoryList) {
+                            cout << inventory->getName() << " - " << inventory->getStock() << endl;
+                        }
+                        cout << "-----------------------------------------------------------" << endl;
+                    }
+                } else if (choose == 3) {
+                    break;
+                } else {
+                    cout << "Invalid input!" << endl;
                 }
             }
         } else if (choose == 2) {
-            cout << "1. Add Employee" << endl;
-            cout << "2. Modify Employee" << endl;
-            cout << "3. Delete Employee" << endl;
-            cout << "4. Show Employee" << endl;
-            cout << "---------------------------------------------------------------------------" << endl;
-            cout << "Choose: ";
-            cin >> choose;
-            cout << "---------------------------------------------------------------------------" << endl;
+            while (true) {
+                cout << "1. Add Employee" << endl;
+                cout << "2. Modify Employee" << endl;
+                cout << "3. Delete Employee" << endl;
+                cout << "4. Show Employee" << endl;
+                cout << "5. Back" << endl;
+                cout << "-----------------------------------------------------------" << endl;
+                cout << "Choose: ";
+                cin >> choose;
+                cout << "-----------------------------------------------------------" << endl;
 
-            if (choose == 1) {
-                addEmployee();
-            } else if (choose == 2) {
-                modifyEmployee();
-            } else if (choose == 3) {
-                deleteEmployee();
-            } else if (choose == 4) {
-                showEmployee();
+                if (choose == 1) {
+                    addEmployee();
+                } else if (choose == 2) {
+                    modifyEmployee();
+                } else if (choose == 3) {
+                    deleteEmployee();
+                } else if (choose == 4) {
+                    showEmployee();
+                } else if (choose == 5) {
+                    break;
+                } else {
+                    cout << "Invalid input!" << endl;
+                }
             }
         } else if (choose == 3) {
-            cout << "1. Add Customer" << endl;
-            cout << "2. Modify Customer" << endl;
-            cout << "3. Delete Customer" << endl;
-            cout << "4. Show Customer" << endl;
-            cout << "---------------------------------------------------------------------------" << endl;
-            cout << "Choose: ";
-            cin >> choose;
-            cout << "---------------------------------------------------------------------------" << endl;
+            while (true) {
+                cout << "1. Add Customer" << endl;
+                cout << "2. Modify Customer" << endl;
+                cout << "3. Delete Customer" << endl;
+                cout << "4. Show Customer" << endl;
+                cout << "5. Back" << endl;
+                cout << "-----------------------------------------------------------" << endl;
+                cout << "Choose: ";
+                cin >> choose;
+                cout << "-----------------------------------------------------------" << endl;
 
-            if (choose == 1) {
-                addCustomer();
-            } else if (choose == 2) {
-                modifyCustomer();
-            } else if (choose == 3) {
-                deleteCustomer();
-            } else if (choose == 4) {
-                showCustomer();
+                if (choose == 1) {
+                    addCustomer();
+                } else if (choose == 2) {
+                    modifyCustomer();
+                } else if (choose == 3) {
+                    deleteCustomer();
+                } else if (choose == 4) {
+                    showCustomer();
+                } else if (choose == 5) {
+                    break;
+                } else {
+                    cout << "Invalid input!" << endl;
+                }
             }
         } else if (choose == 4) {
-            cout << "1. Add Menu" << endl;
-            cout << "2. Modify Menu" << endl;
-            cout << "3. Delete Menu" << endl;
-            cout << "4. Show Menu" << endl;
-            cout << "5. Show Halal Menu" << endl;
-            cout << "6. Show Non-Halal Menu" << endl;
-            cout << "---------------------------------------------------------------------------" << endl;
-            cout << "Choose: ";
-            cin >> choose;
-            cout << "---------------------------------------------------------------------------" << endl;
+            while (true) {
+                cout << "1. Add Menu" << endl;
+                cout << "2. Modify Menu" << endl;
+                cout << "3. Delete Menu" << endl;
+                cout << "4. Show Menu" << endl;
+                cout << "5. Show Halal Menu" << endl;
+                cout << "6. Show Non-Halal Menu" << endl;
+                cout << "7. Back" << endl;
+                cout << "-----------------------------------------------------------" << endl;
+                cout << "Choose: ";
+                cin >> choose;
+                cout << "-----------------------------------------------------------" << endl;
 
-            if (choose == 1) {
-                addMenu();
-            } else if (choose == 2) {
-                modifyMenu();
-            } else if (choose == 3) {
-                deleteMenu();
-            } else if (choose == 4) {
-                showMenu();
-            } else if (choose == 5) {
-                showHalalMenu();
-            } else if (choose == 6) {
-                showNonHalalMenu();
+                if (choose == 1) {
+                    addMenu();
+                } else if (choose == 2) {
+                    modifyMenu();
+                } else if (choose == 3) {
+                    deleteMenu();
+                } else if (choose == 4) {
+                    showMenu();
+                } else if (choose == 5) {
+                    showHalalMenu();
+                } else if (choose == 6) {
+                    showNonHalalMenu();
+                } else if (choose == 7) {
+                    break;
+                } else {
+                    cout << "Invalid input!" << endl;
+                }
             }
         } else if (choose == 5) {
-            cout << "1. Add Order" << endl;
-            cout << "2. Order History" << endl;
-            cout << "---------------------------------------------------------------------------" << endl;
-            cout << "Choose: ";
-            cin >> choose;
-            cout << "---------------------------------------------------------------------------" << endl;
+            while (true) {
+                cout << "1. Add Order" << endl;
+                cout << "2. Order History" << endl;
+                cout << "3. Back" << endl;
+                cout << "-----------------------------------------------------------" << endl;
+                cout << "Choose: ";
+                cin >> choose;
+                cout << "-----------------------------------------------------------" << endl;
 
-            if (choose == 1) {
-                addOrder();
-            } else if (choose == 2) {
-                showOrderHistory();
+                if (choose == 1) {
+                    addOrder();
+                } else if (choose == 2) {
+                    showOrderHistory();
+                } else if (choose == 3) {
+                    break;
+                } else {
+                    cout << "Invalid input!" << endl;
+                }
             }
         } else if (choose == 6) {
             break;
