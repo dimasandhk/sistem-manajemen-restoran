@@ -16,26 +16,6 @@ Date current_time() {
     return date;
 }
 
-class inventory {
-    protected:
-        string name;
-        int stock;
-    
-    public:
-        inventory(string inpName, int inpStock) {
-            name = inpName;
-            stock = inpStock;
-        }
-
-        // Getter
-        string getName() {return name;}
-        int getStock() {return stock;}
-
-        // Setter
-        void setName(string inpName) {name = inpName;}
-        void setStock(int inpStock) {stock = inpStock;}
-};
-
 class People {
     protected:
         string name;
@@ -149,28 +129,44 @@ class Menu {
     protected:
         string name;
         int price;
-        string ingredient;
-        int amount;
-    
+        vector<string> ingredients;
+        vector<int> amounts;
+
     public:
-        Menu(string inpName, int inpPrice, string inpIngredient, int inpAmount) {
+        Menu(string inpName, int inpPrice, vector<string> inpIngredients, vector<int> inpAmounts) {
             name = inpName;
             price = inpPrice;
-            ingredient = inpIngredient; 
-            amount = inpAmount;
+            ingredients = inpIngredients;
+            amounts = inpAmounts;
         }
 
-        // Getter
         string getName() {return name;}
         int getPrice() {return price;}
-        string getIngredient() {return ingredient;}
-        int getAmount() {return amount;}
+        vector<string> getIngredients() {return ingredients;}
+        vector<int> getAmounts() {return amounts;}
 
-        // Setter
         void setName(string inpName) {name = inpName;}
         void setPrice(int inpPrice) {price = inpPrice;}
-        void setIngredient(string inpIngredient) {ingredient = inpIngredient;}
-        void setAmount(int inpAmount) {amount = inpAmount;}
+        void setIngredients(vector<string> inpIngredients) {ingredients = inpIngredients;}
+        void setAmounts(vector<int> inpAmounts) {amounts = inpAmounts;}
+};
+
+class inventory {
+    protected:
+        string name;
+        int stock;
+
+    public:
+        inventory(string inpName, int inpStock) {
+            name = inpName;
+            stock = inpStock;
+        }
+
+        string getName() {return name;}
+        int getStock() {return stock;}
+
+        void setName(string inpName) {name = inpName;}
+        void setStock(int inpStock) {stock = inpStock;}
 };
 
 class Order : public Customer {
@@ -215,8 +211,7 @@ class Order : public Customer {
         }
 };
 
-vector<Order> OrderList;
-vector<Menu*>  MenuList;
+vector<Menu*> MenuList;
 vector<Employee*> EmployeeList;
 vector<Customer*> CustomerList;
 vector<inventory*> InventoryList;
@@ -235,32 +230,38 @@ void addinventory() {
     InventoryList.push_back(new inventory(name, stock));
 }
 
-bool inventoryenough(string name, int amount) {
-    for(auto &inventory : InventoryList) {
-        if (name == inventory->getName()) {
-            if (inventory->getStock() >= amount) {
-                return true;
-            }
-            else {
-                cout << "Inventory not enough!" << endl;
-                return false;
+bool inventoryEnough(Menu* menu) {
+    for (int i = 0; i < menu->getIngredients().size(); i++) {
+        string ingredient = menu->getIngredients()[i];
+        int amountNeeded = menu->getAmounts()[i];
+
+        bool found = false;
+        for (auto &inventory : InventoryList) {
+            if (inventory->getName() == ingredient) {
+                if (inventory->getStock() < amountNeeded) {
+                    return false;
+                }
+                found = true;
+                break;
             }
         }
-        else {
-            cout << "Inventory not found!" << endl;
+        if (!found) {
             return false;
         }
     }
-    return false;
+    return true;
 }
 
-void useinventory(string name, int amount) {
-    for(auto &inventory : InventoryList) {
-        if (name == inventory->getName()) {
-            inventory->setStock(inventory->getStock() - amount);
-        }
-        else {
-            cout << "Inventory not found!" << endl;
+void useInventory(Menu* menu) {
+    for (int i = 0; i < menu->getIngredients().size(); i++) {
+        string ingredient = menu->getIngredients()[i];
+        int amountNeeded = menu->getAmounts()[i];
+
+        for (auto &inventory : InventoryList) {
+            if (inventory->getName() == ingredient) {
+                inventory->setStock(inventory->getStock() - amountNeeded);
+                break;
+            }
         }
     }
 }
@@ -413,8 +414,8 @@ void showCustomer() {
 void addMenu() {
     string name;
     int price;
-    string ingredient;
-    int amount;    
+    vector<string> ingredients;
+    vector<int> amounts;
 
     cin.ignore();
     cout << "Enter menu's name: ";
@@ -422,42 +423,69 @@ void addMenu() {
     cout << "Enter menu's price: ";
     cin >> price;
     cin.ignore();
-    cout << "Enter menu's ingredient: ";
-    getline(cin, ingredient);
-    cout << "Enter ingredients's amount: ";
-    cin >> amount;
-    cin.ignore();
 
-    MenuList.push_back(new Menu(name, price, ingredient, amount));
+    int ingredientCount;
+    cout << "Enter number of ingredients: ";
+    cin >> ingredientCount;
+
+    for (int i = 0; i < ingredientCount; i++) {
+        string ingredient;
+        int amount;
+        
+        cin.ignore();
+        cout << "Enter ingredient " << (i + 1) << ": ";
+        getline(cin, ingredient);
+        cout << "Enter amount for " << ingredient << ": ";
+        cin >> amount;
+
+        ingredients.push_back(ingredient);
+        amounts.push_back(amount);
+    }
+
+    MenuList.push_back(new Menu(name, price, ingredients, amounts));
 }
 
-void ModifyMenu() {
-    string name, newName;
-    int price;
-    string newingredient;
-    int newamount;
-    
+void modifyMenu() {
+    string name;
+    cout << "Enter menu's name to modify: ";
+    getline(cin, name);
+
     for(auto &menu : MenuList) {
-        cin.ignore();
-        cout << "Enter menu's name: ";
-        getline(cin, name);
         if (name == menu->getName()) {
+            string newName;
+            int newPrice;
+            vector<string> newIngredients;
+            vector<int> newAmounts;
+            
+            cin.ignore();
             cout << "Enter new menu's name: ";
             getline(cin, newName);
             cout << "Enter new menu's price: ";
-            cin >> price;
+            cin >> newPrice;
             cin.ignore();
-            cout << "Enter new menu's ingredient: ";
-            getline(cin, newingredient);
-            cout << "Enter new ingredients's amount: ";
-            cin >> newamount;
-            cin.ignore();
+
+            int ingredientCount;
+            cout << "Enter number of ingredients: ";
+            cin >> ingredientCount;
+
+            for (int i = 0; i < ingredientCount; i++) {
+                string ingredient;
+                int amount;
+
+                cout << "Enter ingredient " << (i + 1) << ": ";
+                getline(cin, ingredient);
+                cout << "Enter amount for " << ingredient << ": ";
+                cin >> amount;
+                cin.ignore();
+
+                newIngredients.push_back(ingredient);
+                newAmounts.push_back(amount);
+            }
 
             menu->setName(newName);
-            menu->setPrice(price);
-            menu->setIngredient(newingredient);
-            menu->setAmount(newamount);
-
+            menu->setPrice(newPrice);
+            menu->setIngredients(newIngredients);
+            menu->setAmounts(newAmounts);
         }
         else {
             cout << "Menu not found!" << endl;
@@ -467,35 +495,39 @@ void ModifyMenu() {
 
 void deleteMenu() {
     string name;
-    for(auto &menu : MenuList) {
-        cin.ignore();
-        cout << "Enter menu's name: ";
-        getline(cin, name);
-        if (name == menu->getName()) {
-            MenuList.erase(remove(MenuList.begin(), MenuList.end(), menu), MenuList.end());
-        }
-        else {
-            cout << "Menu not found!" << endl;
-        }
-    }
+    cin.ignore();
+    cout << "Enter menu's name to delete: ";
+    getline(cin, name);
+
+    MenuList.erase(remove_if(MenuList.begin(), MenuList.end(), [&name](const auto& menu) {
+        return menu->getName() == name;
+    }), MenuList.end());
 }
 
 void showMenu() {
     for(auto &menu : MenuList) {
-        cout << "# " << menu->getName() << " - Rp " << menu->getPrice() << ", Ingredients: " << endl << menu->getIngredient() << "(" << menu->getAmount() << ")" << endl;
+        cout << "# " << menu->getName() << " - Rp " << menu->getPrice() << ", Ingredients: ";
+        for (int i = 0; i < menu->getIngredients().size(); i++) {
+            cout << menu->getIngredients()[i] << "(" << menu->getAmounts()[i] << ")";
+            if (i != menu->getIngredients().size() - 1) {
+                cout << ", ";
+            }
+        }
+        cout << endl;
     }
 }
 
+vector<Order> OrderList;
 // !ORDER
 void addOrder() {
     string customerName, menuName;
     int customerIndex = -1, menuIndex = -1;
-    
+
     // Get customer name
     cin.ignore();
     cout << "Enter customer's name: ";
     getline(cin, customerName);
-    
+
     // Find customer index
     for (int i = 0; i < CustomerList.size(); i++) {
         if (CustomerList[i]->getName() == customerName) {
@@ -503,17 +535,17 @@ void addOrder() {
             break;
         }
     }
-    
+
     // Check if customer exists
     if (customerIndex == -1) {
         cout << "Customer not found!" << endl;
         return;
     }
-    
+
     // Get menu name
     cout << "Enter menu's name: ";
     getline(cin, menuName);
-    
+
     // Find menu index
     for (int i = 0; i < MenuList.size(); i++) {
         if (MenuList[i]->getName() == menuName) {
@@ -521,24 +553,27 @@ void addOrder() {
             break;
         }
     }
-    
+
     // Check if menu exists
     if (menuIndex == -1) {
         cout << "Menu not found!" << endl;
         return;
     }
-    
-    if (!inventoryenough(MenuList[menuIndex]->getIngredient(), MenuList[menuIndex]->getAmount())) {
-        cout << "Inventory not enough!" << endl;
+
+    // Check if inventory is enough
+    if (!inventoryEnough(MenuList[menuIndex])) {
+        cout << "Not enough inventory for this menu!" << endl;
         return;
-    } else {
-        useinventory(MenuList[menuIndex]->getIngredient(), MenuList[menuIndex]->getAmount());
     }
-    // Create new order and add menu item
-    OrderList.push_back(Order(CustomerList[customerIndex]->getName(), CustomerList[customerIndex]->getBirthDate(), CustomerList[customerIndex]->getType()));
+
+    // Use inventory
+    useInventory(MenuList[menuIndex]);
+
+    // Add order
+    OrderList.push_back(Order(customerName, CustomerList[customerIndex]->getBirthDate(), CustomerList[customerIndex]->getType()));
     OrderList.back().addItem(*MenuList[menuIndex]);
 
-
+    // Show all orders
     for (int i = 0; i < OrderList.size(); i++) {
         cout << i + 1 << ". " << OrderList[i].intro() << endl;
     }
@@ -642,7 +677,7 @@ int main() {
                 addMenu();
             }
             else if (choose == 2) {
-                ModifyMenu();
+                modifyMenu();
             }
             else if (choose == 3) {
                 deleteMenu();
